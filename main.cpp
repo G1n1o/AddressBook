@@ -109,7 +109,7 @@ void readUsersDataFile (vector <User> &users) {
 
 string loginCheck (vector <User> users, string &login) {
     for (size_t i = 0; i < users.size(); i++) {
-        if (users[i].login == login) {
+            if ((users[i].login == login) || login.empty()) {
             cout << "Taki uzytkownik juz istnieje. Wpisz inna nazwe uzytkownika: ";
             login = readLine();
             loginCheck(users, login);
@@ -120,9 +120,16 @@ string loginCheck (vector <User> users, string &login) {
 
 void registration (vector <User> &users) {
     User newUser;
-    string login, password;
+    string login ="", password="";
     cout << "Podaj nazwe uzytkownika: ";
     login = readLine();
+
+   while (login.empty()){
+   if(login.empty()) {
+    cout << "Podales pusty login. Podaj login jeszcze raz: ";
+    login = readLine();
+    }
+   }
 
     loginCheck(users, login);
 
@@ -188,24 +195,15 @@ void addAdresseeToFile (Addressee newAddressee, User user) {
     file.close();
 }
 
-void readAndSaveChangesAddressesDataFile (Addressee &addresse, User user) {
+void SaveChangesAddresseeInFile (Addressee &addresse, User user) {
     int id;
-    string id_str, name, surname, phoneNumber, address, email, idUser_str, line;
+    string line;
     ifstream addressesFile ("addresses.txt");
-    ofstream userAddressesFile ("temp2.txt");
+    ofstream userAddressesFile ("addresses_temp.txt");
 
     while(getline(addressesFile, line))    {
-        stringstream myStream(line);
 
-        getline(myStream, id_str, '|');
-        getline(myStream, idUser_str, '|');
-        getline(myStream, name, '|');
-        getline(myStream, surname, '|');
-        getline(myStream, phoneNumber, '|');
-        getline(myStream, address, '|');
-        getline(myStream, email, '|');
-
-        id = stoi(id_str);
+        id = stoi(line);
 
         if (id == addresse.id) {
         userAddressesFile << addresse.id <<"|";
@@ -216,51 +214,30 @@ void readAndSaveChangesAddressesDataFile (Addressee &addresse, User user) {
         userAddressesFile << addresse.address <<"|";
         userAddressesFile << addresse.email <<"|"<< endl;
         } else {
-        userAddressesFile << id <<"|";
-        userAddressesFile << idUser_str <<"|";
-        userAddressesFile << name <<"|";
-        userAddressesFile << surname <<"|";
-        userAddressesFile << phoneNumber <<"|";
-        userAddressesFile << address <<"|";
-        userAddressesFile << email <<"|"<< endl;
-        }
+        userAddressesFile << line << endl;
+       }
 
     }
     addressesFile.close();
     userAddressesFile.close();
     remove("addresses.txt");
-    rename("temp2.txt", "addresses.txt");
+    rename("addresses_temp.txt", "addresses.txt");
 }
 
-void readAndSaveRemovesAddressesDataFile (Addressee &addresse, User user) {
+void SaveRemovesAddresseeInFile (Addressee &addresse) {
     int id;
-    string id_str, name, surname, phoneNumber, address, email, idUser_str, line;
+    string line;
     ifstream addressesFile ("addresses.txt");
     ofstream userAddressesFile ("addresses_temp.txt");
 
     while(getline(addressesFile, line))    {
-        stringstream myStream(line);
 
-        getline(myStream, id_str, '|');
-        getline(myStream, idUser_str, '|');
-        getline(myStream, name, '|');
-        getline(myStream, surname, '|');
-        getline(myStream, phoneNumber, '|');
-        getline(myStream, address, '|');
-        getline(myStream, email, '|');
-
-        id = stoi(id_str);
+        id = stoi(line);
 
         if (id == addresse.id) {
         continue;
         } else {
-        userAddressesFile << id <<"|";
-        userAddressesFile << idUser_str <<"|";
-        userAddressesFile << name <<"|";
-        userAddressesFile << surname <<"|";
-        userAddressesFile << phoneNumber <<"|";
-        userAddressesFile << address <<"|";
-        userAddressesFile << email <<"|"<< endl;
+         userAddressesFile << line << endl;
         }
 
     }
@@ -308,9 +285,7 @@ void addPerson (vector <Addressee> &addresses, User user, int &lastId) {
     cout << "Podaj adres mailowy: ";
     email = readLine();
 
-
     id = (lastId == 0) ? 1 : lastId + 1;
-    lastId++;
 
     newAddressee.id = id;
     newAddressee.name = name;
@@ -321,9 +296,9 @@ void addPerson (vector <Addressee> &addresses, User user, int &lastId) {
 
     addAdresseeToFile(newAddressee, user);
     addresses.push_back(newAddressee);
+    lastId++;
     cout << "Adresat zostal dodany. "<< endl;
     Sleep(500);
-
 }
 
 void searchByName ( vector <Addressee> addresses) {
@@ -454,7 +429,7 @@ void editAddressee(vector <Addressee> &addresses, User user) {
                 cout << "Nie ma takiej opcji!. Wpisz ponownie!"<< endl;
                 Sleep(400);
             }
-            readAndSaveChangesAddressesDataFile(addresses[i], user);
+            SaveChangesAddresseeInFile(addresses[i], user);
             break;
         }
     }
@@ -465,7 +440,7 @@ void editAddressee(vector <Addressee> &addresses, User user) {
     system("pause");
 }
 
-void removeAddressee(vector <Addressee> &addresses, User user) {
+void removeAddressee(vector <Addressee> &addresses) {
     system ("cls");
     int id;
     int counter = 0;
@@ -483,7 +458,7 @@ void removeAddressee(vector <Addressee> &addresses, User user) {
                 addresses.erase(addresses.begin() + i);
                 cout << "Usunieto adresata o ID: " << id << endl;
                 Sleep(200);
-                readAndSaveRemovesAddressesDataFile(addresses[i], user);
+                SaveRemovesAddresseeInFile(addresses[i]);
                 break;
             } else {
                 cout << "Nie potwierdzono usuniecia adresata..."<< endl;
@@ -526,29 +501,14 @@ void goToAddressBook (User &user) {
         choice = readSign();
 
         switch (choice) {
-        case '1':
-            addPerson(addresses, user, lastId);
-            break;
-        case '2':
-            searchByName(addresses);
-            break;
-        case '3':
-            searchBySurname(addresses);
-            break;
-        case '4':
-            showAllAdresses(addresses);
-            break;
-        case '5':
-            removeAddressee(addresses, user);
-            break;
-        case '6':
-            editAddressee(addresses, user);
-            break;
-        case '7':
-            changePassword(user);
-            break;
-        case '9':
-            break;
+        case '1': addPerson(addresses, user, lastId); break;
+        case '2': searchByName(addresses); break;
+        case '3': searchBySurname(addresses); break;
+        case '4': showAllAdresses(addresses); break;
+        case '5': removeAddressee(addresses); break;
+        case '6': editAddressee(addresses, user); break;
+        case '7': changePassword(user); break;
+        case '9': break;
         default:
             cout << "Nie ma takiej opcji!. Wpisz ponownie!"<< endl;
             Sleep(500);
@@ -556,7 +516,7 @@ void goToAddressBook (User &user) {
     }
 }
 
-void logging (vector <User> users) {
+void logging (vector <User> &users) {
     string login, password;
     cout << "Podaj nazwe uzytkownika: ";
     login = readLine();
@@ -599,15 +559,9 @@ int main() {
         choice = readSign();
 
         switch (choice) {
-        case '1':
-            registration(users);
-            break;
-        case '2':
-            logging(users);
-            break;
-        case '9':
-            exit(0);
-            break;
+        case '1': registration(users); break;
+        case '2': logging(users); break;
+        case '9': exit(0); break;
         default:
             cout << "Nie ma takiej opcji!. Wpisz ponownie!"<< endl;
             Sleep(500);
